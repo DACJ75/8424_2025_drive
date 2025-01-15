@@ -21,6 +21,7 @@ import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class DriveSubsystem extends SubsystemBase {
@@ -44,15 +45,15 @@ public class DriveSubsystem extends SubsystemBase {
 
   private final DifferentialDriveKinematics kinematics;
 
-  private final AHRS gyro = new AHRS(NavXComType.kI2C);
+  private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
 
   private final Double velocityConversion = (8.45) * (Math.PI * Units.inchesToMeters(4)) / 60;
 
   public DriveSubsystem() {
-    frontRight = new SparkMax(0, MotorType.kBrushless);
-    backRight = new SparkMax(1, MotorType.kBrushless);
-    frontLeft = new SparkMax(2, MotorType.kBrushless);
-    backLeft = new SparkMax(3, MotorType.kBrushless);
+    frontRight = new SparkMax(1, MotorType.kBrushless);
+    backRight = new SparkMax(2, MotorType.kBrushless);
+    frontLeft = new SparkMax(3, MotorType.kBrushless);
+    backLeft = new SparkMax(4, MotorType.kBrushless);
 
     frontRightEncoder = frontRight.getEncoder();
     frontLeftEncoder = frontLeft.getEncoder();
@@ -61,16 +62,12 @@ public class DriveSubsystem extends SubsystemBase {
     backLeftConfig = new SparkMaxConfig();
     frontRightConfig = new SparkMaxConfig();
     frontLeftConfig = new SparkMaxConfig();
-
+    
+    frontRightConfig.inverted(false);
     backRightConfig.follow(frontRight);
-    backRightConfig.inverted(true);
 
-    frontRightConfig.inverted(true);
-
-    frontLeftConfig.inverted(false);
-
+    frontLeftConfig.inverted(true);
     backLeftConfig.follow(frontLeft);
-    backLeftConfig.inverted(false);
 
     backLeft.configure(
         backLeftConfig,
@@ -149,5 +146,7 @@ public class DriveSubsystem extends SubsystemBase {
       gyro.getRotation2d(), 
       frontLeftEncoder.getPosition(), 
       frontRightEncoder.getPosition());
+
+    SmartDashboard.putNumber("Gyro", gyro.getAngle());
   }
 }

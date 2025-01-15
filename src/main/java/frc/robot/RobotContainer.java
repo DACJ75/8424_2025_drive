@@ -64,8 +64,8 @@ public class RobotContainer {
     m_driveSubsystem.setDefaultCommand(
       new DriveCommand(
         m_driveSubsystem, 
-        () -> m_driverController.getRawAxis(0) + nextGenJoystick.getRawAxis(0), 
-        () -> m_driverController.getRawAxis(1)));
+        () -> m_driverController.getLeftY() + nextGenJoystick.getRawAxis(0), 
+        () -> m_driverController.getRightX()));
   }
 
   /**
