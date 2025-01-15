@@ -11,8 +11,18 @@ import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.EncoderConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.studica.frc.AHRS;
+import com.studica.frc.AHRS.NavXComType;
 
+import edu.wpi.first.cscore.VideoListener;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.kinematics.Kinematics;
+import edu.wpi.first.math.kinematics.Odometry;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -32,6 +42,14 @@ public class DriveSubsystem extends SubsystemBase {
   private final SparkMaxConfig backLeftConfig;
 
   private final DifferentialDrive diffDrive;
+
+  private final DifferentialDriveOdometry odometry;
+
+  private final DifferentialDriveKinematics kinematics;
+
+  private final AHRS gyro = new AHRS(NavXComType.kI2C);
+
+  private final Double velocityConversion = (8.45) * (Math.PI * Units.inchesToMeters(4)) / 60;
 
   public DriveSubsystem() {
     frontRight = new SparkMax(0, MotorType.kBrushless);
@@ -67,6 +85,13 @@ public class DriveSubsystem extends SubsystemBase {
     frontLeft.configure(frontLeftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     diffDrive = new DifferentialDrive(frontLeft, frontRight);
+
+    kinematics = new DifferentialDriveKinematics(Units.inchesToMeters(22));
+
+    odometry = new DifferentialDriveOdometry(
+      gyro.getRotation2d(), 
+      frontLeftEncoder.getPosition(), 
+      frontRightEncoder.getPosition());
   }
 
   public void drive(double xspeed, double omega) {
@@ -91,12 +116,30 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   public Pose2d getPose() {
+    return odometry.getPoseMeters();
+  }
 
-    return new Pose2d();
+  public void resetPose(Pose2d pose) {
+    odometry.resetPose(pose);
+  }
+
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return kinematics.toChassisSpeeds(
+      new DifferentialDriveWheelSpeeds(
+        frontLeftEncoder.getVelocity() * velocityConversion, 
+        frontRightEncoder.getVelocity() * velocityConversion));
+  }
+
+  public void driveRobotRelative(ChassisSpeeds speeds) {
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+
+    odometry.update(
+      gyro.getRotation2d(), 
+      frontLeftEncoder.getPosition(), 
+      frontRightEncoder.getPosition());
   }
 }
