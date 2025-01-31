@@ -4,8 +4,12 @@
 
 package frc.robot.subsystems;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPLTVController;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -14,13 +18,16 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 
+import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -30,6 +37,7 @@ public class DriveSubsystem extends SubsystemBase {
   public final SparkMax backRight;
   public final SparkMax frontLeft;
   public final SparkMax backLeft;
+  
 
   private final RelativeEncoder frontRightEncoder;
   private final RelativeEncoder frontLeftEncoder;
@@ -47,13 +55,18 @@ public class DriveSubsystem extends SubsystemBase {
 
   private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
 
-  private final Double velocityConversion = (8.45) * (Math.PI * Units.inchesToMeters(4)) / 60;
+  private final double velocityConversion = (8.45) * (Math.PI * Units.inchesToMeters(4)) / 60;
+
+  private final double WHEEL_CIRCUMFERENCE = Units.inchesToMeters(6) * Math.PI; 
+
+  RobotConfig config;
 
   public DriveSubsystem() {
     frontRight = new SparkMax(1, MotorType.kBrushless);
     backRight = new SparkMax(2, MotorType.kBrushless);
     frontLeft = new SparkMax(3, MotorType.kBrushless);
     backLeft = new SparkMax(4, MotorType.kBrushless);
+    
 
     frontRightEncoder = frontRight.getEncoder();
     frontLeftEncoder = frontLeft.getEncoder();
@@ -62,6 +75,7 @@ public class DriveSubsystem extends SubsystemBase {
     backLeftConfig = new SparkMaxConfig();
     frontRightConfig = new SparkMaxConfig();
     frontLeftConfig = new SparkMaxConfig();
+    
     
     frontRightConfig.inverted(false);
     backRightConfig.follow(frontRight);
@@ -97,15 +111,40 @@ public class DriveSubsystem extends SubsystemBase {
       gyro.getRotation2d(), 
       frontLeftEncoder.getPosition(), 
       frontRightEncoder.getPosition());
+
+    try{
+      config = RobotConfig.fromGUISettings();
+
+      AutoBuilder.configure(
+        this::getPose,
+        this::resetPose,
+        this::getRobotRelativeSpeeds,
+        (speeds,feedforwards) ->driveRobotRelative(speeds),
+        new PPLTVController(0.02),
+        config,
+        () -> {
+
+          var alliance = DriverStation.getAlliance();
+          if (alliance.isPresent()) { 
+            return alliance.get() == DriverStation.Alliance.Red;
+          }
+          return false;
+        },
+        this
+      );
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
-  public void drive(double xspeed, double omega) {
+  //This is massive. do you know what else is massive. LOOWWWWWW TAPER FADE!!!!!!! ITs just so massive
+  public void drive(double xspeed, double zspeed) {
 
     double maxSpeed = 0.6;
     double maxRotation = 0.6;
     double xModified = maxSpeed * Math.pow(xspeed, 3);
 
-    diffDrive.arcadeDrive(xModified, maxRotation * omega);
+    diffDrive.arcadeDrive(xModified, maxRotation * zspeed);
   }
 
   public double getEncoderPosition(RelativeEncoder encoder) {
@@ -136,6 +175,13 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   public void driveRobotRelative(ChassisSpeeds speeds) {
+    DifferentialDriveWheelSpeeds wheelSpeeds = kinematics.toWheelSpeeds(speeds);
+
+    frontLeft.getClosedLoopController()
+      .setReference(wheelSpeeds.leftMetersPerSecond * 60 / WHEEL_CIRCUMFERENCE, ControlType.kMAXMotionVelocityControl);
+    frontRight.getClosedLoopController()
+      .setReference(wheelSpeeds.rightMetersPerSecond * 60 / WHEEL_CIRCUMFERENCE, ControlType.kMAXMotionVelocityControl);
+
   }
 
   @Override

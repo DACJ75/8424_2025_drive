@@ -1,0 +1,121 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.773026315789473,
+        "y": 4.178947368421053
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.811826356689157,
+        "y": 4.189684387682179
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.853955464107262,
+        "y": 4.199524464538383
+      },
+      "prevControl": {
+        "x": 6.422948930545802,
+        "y": 4.182897022471188
+      },
+      "nextControl": {
+        "x": 7.265527208918898,
+        "y": 4.215402148077893
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.418338815790507,
+        "y": 5.1122532894736255
+      },
+      "prevControl": {
+        "x": 7.420121414995319,
+        "y": 4.671459749048319
+      },
+      "nextControl": {
+        "x": 7.414184116710734,
+        "y": 6.139609585734846
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.787746964080625,
+        "y": 6.21318449536173
+      },
+      "prevControl": {
+        "x": 5.395131497380279,
+        "y": 6.111703696046645
+      },
+      "nextControl": {
+        "x": 3.450149903998786,
+        "y": 6.4366679911978775
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 1.5779605263168222,
+        "y": 7.229029605263099
+      },
+      "prevControl": {
+        "x": 1.808881578948401,
+        "y": 6.767187499999942
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "wait",
+      "waypointRelativePos": 2.0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "sequential",
+        "data": {
+          "commands": [
+            {
+              "type": "wait",
+              "data": {
+                "waitTime": 5.0
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -18.208484470580885
+  },
+  "reversed": true,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}
