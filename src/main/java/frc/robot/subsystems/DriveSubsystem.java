@@ -8,17 +8,15 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPLTVController;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.EncoderConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
-
-import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
@@ -27,7 +25,6 @@ import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -47,7 +44,7 @@ public class DriveSubsystem extends SubsystemBase {
   private final SparkMaxConfig backRightConfig;
   private final SparkMaxConfig backLeftConfig;
 
-  private final DifferentialDrive diffDrive;
+  //private final DifferentialDrive diffDrive;
 
   private final DifferentialDriveOdometry odometry;
 
@@ -55,9 +52,14 @@ public class DriveSubsystem extends SubsystemBase {
 
   private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
 
-  private final double velocityConversion = (8.45) * (Math.PI * Units.inchesToMeters(4)) / 60;
+  private final double GEAR_RATIO = 8.46;
+
+  private final double velocityConversion = ((GEAR_RATIO) * (Math.PI * Units.inchesToMeters(4)) / 60);
 
   private final double WHEEL_CIRCUMFERENCE = Units.inchesToMeters(6) * Math.PI; 
+
+  private final double KP_DRIVE = 0.00001;
+  private final double FF_DRIVE = 0.001;
 
   RobotConfig config;
 
@@ -67,7 +69,6 @@ public class DriveSubsystem extends SubsystemBase {
     frontLeft = new SparkMax(3, MotorType.kBrushless);
     backLeft = new SparkMax(4, MotorType.kBrushless);
     
-
     frontRightEncoder = frontRight.getEncoder();
     frontLeftEncoder = frontLeft.getEncoder();
 
@@ -76,12 +77,15 @@ public class DriveSubsystem extends SubsystemBase {
     frontRightConfig = new SparkMaxConfig();
     frontLeftConfig = new SparkMaxConfig();
     
-    
     frontRightConfig.inverted(false);
     backRightConfig.follow(frontRight);
+    frontRightConfig.closedLoop.p(KP_DRIVE);
+    frontRightConfig.closedLoop.velocityFF(FF_DRIVE);
 
     frontLeftConfig.inverted(true);
     backLeftConfig.follow(frontLeft);
+    frontLeftConfig.closedLoop.p(KP_DRIVE);
+    frontLeftConfig.closedLoop.velocityFF(FF_DRIVE);
 
     backLeft.configure(
         backLeftConfig,
@@ -103,7 +107,7 @@ public class DriveSubsystem extends SubsystemBase {
       ResetMode.kResetSafeParameters, 
       PersistMode.kPersistParameters);
 
-    diffDrive = new DifferentialDrive(frontLeft, frontRight);
+    //diffDrive = new DifferentialDrive(frontLeft, frontRight);
 
     kinematics = new DifferentialDriveKinematics(Units.inchesToMeters(22));
 
@@ -144,7 +148,15 @@ public class DriveSubsystem extends SubsystemBase {
     double maxRotation = 0.6;
     double xModified = maxSpeed * Math.pow(xspeed, 3);
 
-    diffDrive.arcadeDrive(xModified, maxRotation * zspeed);
+    ChassisSpeeds speeds = new ChassisSpeeds();
+    speeds.vxMetersPerSecond = xspeed;
+    speeds.omegaRadiansPerSecond = zspeed;
+
+    driveRobotRelative(speeds);
+
+    // diffDrive.arcadeDrive(xModified, maxRotation * zspeed);
+
+
   }
 
   public double getEncoderPosition(RelativeEncoder encoder) {
@@ -177,10 +189,17 @@ public class DriveSubsystem extends SubsystemBase {
   public void driveRobotRelative(ChassisSpeeds speeds) {
     DifferentialDriveWheelSpeeds wheelSpeeds = kinematics.toWheelSpeeds(speeds);
 
+    double leftRotPerMin = wheelSpeeds.leftMetersPerSecond * 60 / WHEEL_CIRCUMFERENCE;
+    double rightRotPerMin = wheelSpeeds.rightMetersPerSecond * 60 / WHEEL_CIRCUMFERENCE;
+
+    SmartDashboard.putNumber("LeftM/S", leftRotPerMin);
+    SmartDashboard.putNumber("RightM/S", rightRotPerMin);
+
     frontLeft.getClosedLoopController()
-      .setReference(wheelSpeeds.leftMetersPerSecond * 60 / WHEEL_CIRCUMFERENCE, ControlType.kMAXMotionVelocityControl);
+      .setReference(leftRotPerMin, ControlType.kVelocity);
+
     frontRight.getClosedLoopController()
-      .setReference(wheelSpeeds.rightMetersPerSecond * 60 / WHEEL_CIRCUMFERENCE, ControlType.kMAXMotionVelocityControl);
+      .setReference(rightRotPerMin, ControlType.kVelocity);
 
   }
 
@@ -188,10 +207,13 @@ public class DriveSubsystem extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
 
+    double leftMotorMeters = (frontLeftEncoder.getPosition() * WHEEL_CIRCUMFERENCE) / GEAR_RATIO;
+    double rightMotorMeters = (frontRightEncoder.getPosition() * WHEEL_CIRCUMFERENCE) / GEAR_RATIO;
+
     odometry.update(
       gyro.getRotation2d(), 
-      frontLeftEncoder.getPosition(), 
-      frontRightEncoder.getPosition());
+      leftMotorMeters, 
+      rightMotorMeters);
 
     SmartDashboard.putNumber("Gyro", gyro.getAngle());
   }

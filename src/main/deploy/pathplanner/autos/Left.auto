@@ -7,19 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Middle Drive"
+            "pathName": "Left Drive"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 5.0
+            "waitTime": 3.0
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Copy of Middle Drive"
+            "pathName": "Left To Feeding"
           }
         }
       ]
