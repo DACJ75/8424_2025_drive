@@ -7,19 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "test1"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "test 2"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "test 3"
+            "pathName": "2"
           }
         }
       ]

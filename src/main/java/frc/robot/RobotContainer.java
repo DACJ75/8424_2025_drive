@@ -35,10 +35,10 @@ public class RobotContainer {
   private final DriveSubsystem m_driveSubsystem = new DriveSubsystem();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
-  private final CommandXboxController m_driverController = new CommandXboxController(
+  public final CommandJoystick m_driverController = new CommandJoystick(
       OperatorConstants.kDriverControllerPort);
 
-  private final CommandJoystick nextGenJoystick = new CommandJoystick(1);
+  public final CommandJoystick nextGenJoystick = new CommandJoystick(1);
 
   private final SendableChooser<Command> autoChooser;
 
@@ -53,14 +53,14 @@ public class RobotContainer {
     configureBindings();
     autoChooser.setDefaultOption("Middle2", getAutonomousCommand());
     SmartDashboard.putData("Auto Choices", autoChooser);
-
+  }
 
     // {PathPlannerPath path = PathPlannerPath.fromPathFile("Middle 2");
     // Object drivetrain;
     // Command command = ((PathPlannerAuto) drivetrain).PathPlannerAuto(path);
     // return new AutoRoutine("Middle 2", command, List.of(path),
     // path.getStartingDifferentialPose());
-  }
+  
   // }
 
   /**
@@ -85,9 +85,15 @@ public class RobotContainer {
 
     m_driveSubsystem.setDefaultCommand(
         new DriveCommand(
-            m_driveSubsystem,
-            () -> m_driverController.getLeftY() + nextGenJoystick.getRawAxis(0),
-            () -> m_driverController.getRightX() + nextGenJoystick.getRawAxis(0)));
+             m_driveSubsystem(
+            () -> m_driverController.getLeftY() + nextGenJoystick.getRawAxis(1), m_driveSubsystem)));
+            () -> m_driverController.getRightX() + nextGenJoystick.getRawAxis(2), m_driveSubsystem;
+          
+    DriveSubsystem.setDefaultCommand(new DriveCommand(
+   () -> -m_driverController.getLeftY() *
+    (m_driverController.getHID())
+   
+            
 
     // m_driverController.leftTrigger().onTrue(Commands.runOnce(() -> m_armSubsytem.moveArmBackward(), m_armSubsytem));
     // m_driverController.rightTrigger().onTrue(Commands.runOnce(() -> m_armSubsytem.moveArmForward(), m_armSubsytem));
@@ -103,6 +109,7 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
     return autoChooser.getSelected();
-
+  
   }
+
 }
